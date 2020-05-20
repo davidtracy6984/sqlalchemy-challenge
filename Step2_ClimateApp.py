@@ -38,9 +38,8 @@ def welcome():
     return (
         f"Available Routes</br>"
         f"/api/v1.0/station</br>"
-        f"/api/v1.0/precipitation</br>"
-        f"/api/v1.0/stations</br>"
-        f"/api/v1.0/tobs"
+        f"/api/v1.0/precipitation"
+         f"/api/v1.0/stations"
     )
 
 
@@ -91,7 +90,8 @@ def precipitation():
     return jsonify(rainDict)
 
 
-
+if __name__ == '__main__':
+    app.run(debug=True)
 
 @app.route("/api/v1.0/stations")
 def stations():
@@ -108,49 +108,3 @@ def stations():
     all_names = list(np.ravel(results))
 
     return jsonify(all_names)
-    
-    
-    
-@app.route("/api/v1.0/tobs")
-def tobs():
-    # Create our session (link) from Python to the DB
-    session = Session(engine)
-    
-    # Query all temperature
-    qry_active_station = session.query(Measurement.station, func.count(Measurement.station)).group_by(Measurement.station).order_by(func.count(Measurement.station).desc()).all()
-
-    session.close()
-    
-    most_active = qry_active_station[0][0]
-
-    session = Session(engine)
-
-    maxdate = session.query(func.max(func.strftime("%Y-%m-%d", Measurement.date))).all()
-    tmpdate = list(np.ravel(maxdate))[0]
-    tmpdate = dt.datetime.strptime(tmpdate, '%Y-%m-%d')
-    year = dt.timedelta(days=365)
-    begdate = tmpdate - year
-
-    
-
-    session.close()
-
-    session = Session(engine)
-
-    results = session.query(Measurement.date, Measurement.tobs).\
-        filter(Measurement.date >= begdate).\
-            filter(Measurement.station == most_active).all()
-
-    session.close()
-
-    qry_results = list(np.ravel(results))
-
-    return jsonify(qry_results)
-
-
-
-   
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
