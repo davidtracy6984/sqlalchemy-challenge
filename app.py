@@ -40,7 +40,9 @@ def welcome():
         f"/api/v1.0/station</br>"
         f"/api/v1.0/precipitation</br>"
         f"/api/v1.0/stations</br>"
-        f"/api/v1.0/tobs"
+        f"/api/v1.0/tobs</br>"
+        f"/api/v1.0/startdate</br>"
+        f"/api/v1.0/start_end_date</br>"
     )
 
 
@@ -148,8 +150,84 @@ def tobs():
     return jsonify(qry_results)
 
 
+@app.route("/api/v1.0/<start>")
+def qstart(start):
 
-   
+    session = Session(engine)
+    # Grab the beginning date
+    mindate = session.query(func.min(func.strftime("%Y-%m-%d", Measurement.date))).all()
+    beg_tmpdate = list(np.ravel(mindate))[0]
+    beg_tmpdate = dt.datetime.strptime(beg_tmpdate, '%Y-%m-%d')
+
+    session.close()
+
+    session = Session(engine)
+    # Grab the ending date
+    end_date = session.query(func.max(func.strftime("%Y-%m-%d", Measurement.date))).all()
+    end_tmpdate = list(np.ravel(end_date))[0]
+    end_tmpdate = dt.datetime.strptime(end_tmpdate, '%Y-%m-%d')
+
+    session.close()
+
+    beg_tmpdate2 = str(beg_tmpdate)
+    end_tmpdate2 = str(end_tmpdate)
+
+    if (start < beg_tmpdate2) | (start > end_tmpdate2):
+        return("Choose a date between 2010-01-02 and 2017-08-23")
+
+    session = Session(engine)
+
+
+    mytemp = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.round(func.avg(Measurement.tobs),1)).\
+    filter(Measurement.date >= start).all()
+    
+  
+
+    session.close() 
+    qry_results = list(np.ravel(mytemp))
+
+    return jsonify(qry_results)
+
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def dualstart(start_date,end_date):
+    if start_date >= end_date:
+        return("Reverse your dates!")
+
+    session = Session(engine)
+    # Grab the beginning date
+    mindate = session.query(func.min(func.strftime("%Y-%m-%d", Measurement.date))).all()
+    beg_tmpdate = list(np.ravel(mindate))[0]
+    beg_tmpdate = dt.datetime.strptime(beg_tmpdate, '%Y-%m-%d')
+
+    session.close()
+
+    session = Session(engine)
+    # Grab the ending date
+    new_end_date = session.query(func.max(func.strftime("%Y-%m-%d", Measurement.date))).all()
+    end_tmpdate = list(np.ravel(new_end_date))[0]
+    end_tmpdate = dt.datetime.strptime(end_tmpdate, '%Y-%m-%d')
+
+    session.close()
+
+    beg_tmpdate2 = str(beg_tmpdate)
+    end_tmpdate2 = str(end_tmpdate)
+
+    if (str(start_date) < beg_tmpdate2) | (str(end_date) > end_tmpdate2):
+        return("Choose a date between 2010-01-02 and 2017-08-23")
+
+    session = Session(engine)
+
+
+    mytemp = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.round(func.avg(Measurement.tobs),1)).\
+    filter(Measurement.date >= start_date).\
+        filter(Measurement.date <= end_date).all()
+    
+  
+
+    session.close() 
+    qry_results = list(np.ravel(mytemp))
+
+    return jsonify(qry_results)
 
 
 if __name__ == '__main__':
